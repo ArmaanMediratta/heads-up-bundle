@@ -145,7 +145,7 @@ def run_match(job):
         "std": statistics.stdev(paired), "verdict": verdict,
         "errors": a1.errors + a2.errors, "skipped": a1.skipped + a2.skipped,
         "opp_errors": b1.errors + b2.errors,
-        "spend": max(a1.spent, a2.spent), "times": times,
+        "spend": max(a1.spent, a2.spent), "spend_avg": (a1.spent + a2.spent) / 2, "times": times,
     }
 
 
@@ -176,9 +176,9 @@ def main() -> None:
     with ProcessPoolExecutor(max_workers=args.jobs) as pool:
         results = list(pool.map(run_match, jobs))
 
-    print(f"{args.bot} | {args.deals} deals x {args.seeds} seeds | bank {args.bank}s\n")
+    print(f"{args.bot} | {args.deals} deals x {args.seeds} matches per opponent | bank {args.bank}s\n")
     print(f"{'opponent':32} {'bb/deal':>8} {'95% CI (pooled)':>18} {'W-C-L':>7} "
-          f"{'err':>4} {'skip':>5} {'p50ms':>6} {'p99ms':>6} {'max spend':>9}")
+          f"{'err':>4} {'skip':>5} {'avg ms':>6} {'p99ms':>6} {'think/half':>10} {'max':>6}")
     total_points = 0.0
     for o in opps:
         rs = [r for r in results if r["opp"] == os.path.basename(o)]
@@ -191,9 +191,15 @@ def main() -> None:
         print(f"{os.path.basename(o)[:32]:32} {mean:+8.3f} [{mean - 1.96 * pooled_se:+7.3f},"
               f"{mean + 1.96 * pooled_se:+7.3f}] {'-'.join(map(str, wcl)):>7} "
               f"{sum(r['errors'] for r in rs):4d} {sum(r['skipped'] for r in rs):5d} "
-              f"{1000 * _pct(times, .5):6.2f} {1000 * _pct(times, .99):6.2f} "
-              f"{max(r['spend'] for r in rs):8.2f}s")
-    print(f"\npoints {total_points:.1f} / {len(results)}   ({time.perf_counter() - start:.0f}s)")
+              f"{1000 * sum(times) / max(len(times), 1):6.2f} {1000 * _pct(times, .99):6.2f} "
+              f"{sum(r['spend_avg'] for r in rs) / len(rs):9.2f}s {max(r['spend'] for r in rs):5.2f}s")
+    all_times = [t for r in results for t in r["times"]]
+    print(f"\npoints {total_points:.1f} / {len(results)}   "
+          f"W-C-L {sum(r['verdict'] == 'WIN' for r in results)}-"
+          f"{sum(r['verdict'] == 'CHOP' for r in results)}-{sum(r['verdict'] == 'LOSS' for r in results)}   "
+          f"avg decision {1000 * sum(all_times) / max(len(all_times), 1):.2f} ms   "
+          f"avg think/half {sum(r['spend_avg'] for r in results) / len(results):.2f}s of {args.bank}s   "
+          f"({time.perf_counter() - start:.0f}s)")
 
 
 if __name__ == "__main__":
