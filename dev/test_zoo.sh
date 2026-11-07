@@ -15,7 +15,9 @@
 #   -d DEALS    deals per match (default 1000, like the tournament)
 #   -b BOT      bot under test, optionally with param overrides,
 #               e.g. "agent.py@r_oop=0.9" (default agent.py)
-#   -g GROUPS   comma-separated opponent groups: zoo, sparring, baselines
+#   -g GROUPS   comma-separated opponent groups: zoo, sparring, baselines,
+#               mains (agent.py + demon/demon.py, minus the bot under test),
+#               or all (every group above)
 #               (default zoo,sparring)
 #   -B          also play the four baseline-bots/ (same as adding baselines to -g)
 #   -t SECONDS  time bank per half (default 8; lower it to mimic a slower CPU)
@@ -34,6 +36,7 @@
 #   dev/test_zoo.sh                    # 3 matches vs each zoo + sparring bot
 #   dev/test_zoo.sh -n 10 -B           # 10 matches vs zoo + sparring + baselines
 #   dev/test_zoo.sh -g sparring        # sparring bots only
+#   dev/test_zoo.sh -g all -n 10       # everything, incl. agent.py vs demon
 #   dev/test_zoo.sh -n 10 -O           # report, then open it
 #   dev/test_zoo.sh -R                 # quick table, no report
 #   dev/test_zoo.sh -n 5 -t 4          # half the time bank
@@ -91,17 +94,47 @@ if ! "$PY" -c "import numpy, fastapi" 2>/dev/null; then
 fi
 
 shopt -s nullglob
-FOUND=0
+
+# Expand "all" and drop repeats (e.g. "-g all -B").
+EXPANDED=()
 for group in "${OPP_GROUPS[@]}"; do
+  if [[ "$group" == all ]]; then
+    EXPANDED+=(zoo sparring baselines mains)
+  else
+    EXPANDED+=("$group")
+  fi
+done
+GROUP_LIST=()
+for group in "${EXPANDED[@]}"; do
+  [[ " ${GROUP_LIST[*]-} " == *" $group "* ]] || GROUP_LIST+=("$group")
+done
+
+# OPP_ARGS is what the harness gets: group names it expands itself, plus
+# explicit paths for our main bots (minus the bot under test, so it never
+# plays itself).
+BOT_PATH="${BOT%%@*}"
+OPP_ARGS=()
+FOUND=0
+for group in "${GROUP_LIST[@]}"; do
   case "$group" in
     zoo)       bots=(dev/zoo/[!_]*.py) ;;
     sparring)  bots=(dev/sparring/[!_]*.py) ;;
     baselines) bots=(baseline-bots/*.py) ;;
-    *) echo "error: unknown group '$group' (use zoo, sparring, baselines)" >&2; exit 2 ;;
+    mains)
+      bots=()
+      for main in agent.py demon/demon.py; do
+        [[ -f "$main" && ! "$main" -ef "$BOT_PATH" ]] && bots+=("$main")
+      done ;;
+    *) echo "error: unknown group '$group' (use zoo, sparring, baselines, mains, all)" >&2; exit 2 ;;
   esac
   if [[ ${#bots[@]} -eq 0 ]]; then
     echo "warning: no bots found for group '$group'" >&2
     continue
+  fi
+  if [[ "$group" == mains ]]; then
+    OPP_ARGS+=("${bots[@]}")
+  else
+    OPP_ARGS+=("$group")
   fi
   FOUND=$((FOUND + ${#bots[@]}))
   echo "$group bots: $(basename -a "${bots[@]}" | tr '\n' ' ')"
@@ -111,7 +144,7 @@ if [[ $FOUND -eq 0 ]]; then
   exit 1
 fi
 
-ARGS=(--bot "$BOT" --opp "${OPP_GROUPS[@]}" --deals "$DEALS" --seeds "$GAMES"
+ARGS=(--bot "$BOT" --opp "${OPP_ARGS[@]}" --deals "$DEALS" --seeds "$GAMES"
       --bank "$BANK" --seed-offset "$OFFSET")
 [[ -n "$JOBS" ]] && ARGS+=(--jobs "$JOBS")
 
