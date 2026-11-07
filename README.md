@@ -124,3 +124,22 @@ The tournament builds **exactly that commit**. Anything you push afterwards is i
   - Big libraries load slowly. Your server must answer within 15 seconds of starting, so check that `import`s plus loading your model fit.
 - **Threads:** the base image limits PyTorch/numpy to 1 thread (`OMP_NUM_THREADS=1`), because many bots share the machine. Your bot gets about 1 CPU.
 - **Model files:** commit them to your repo normally. Each file must be under GitHub's 100 MB limit. **Git LFS files are not downloaded.**
+
+## 9. demon.py (experimental challenger to agent.py)
+`demon.py` is a second, self-contained bot with the same server contract as `agent.py`
+(run it with `python demon.py`). It reuses `bot/` for equity rollouts and adds:
+
+- four parameterised strategy experts (grinder / aggressor / trapper / sheriff),
+- a residual Q-learning ensemble (six state "lenses") plus a meta Q-learner that picks the expert per hand,
+- opponent ranges calibrated from the hands they show down, and a wider big-blind defence vs frequent raisers,
+- its own time manager that never runs out the 8 s bank (agent.py's can, on a busy CPU).
+
+Learned data lives in `demon_data/demon_q.npz`. Tuning, training and evaluation are in `dev/demon_lab.py`:
+```
+python dev/demon_lab.py eval  --opp agent --seeds 10           # demon vs agent.py, duplicate scoring
+python dev/demon_lab.py tune  --expert sheriff --opp agent dev/sparring/jammer.py
+python dev/demon_lab.py train --opp agent baselines zoo sparring --rounds 3
+python dev/demon_lab.py meta  --opp agent baselines zoo sparring
+python dev/tearsheet.py --bot demon.py --opp agent.py baselines zoo sparring --jobs 6
+```
+Tests: `python -m pytest -q tests/test_demon.py` (runs the full judge-compatibility suite against demon.py).
