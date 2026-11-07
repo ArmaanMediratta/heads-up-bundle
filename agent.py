@@ -38,6 +38,8 @@ from game import Action, AgentConfig, HandResult, Observation, Street
 # answer within 15 seconds of starting.
 warmup()
 
+import bot  # noqa: E402  (builds its numpy tables from the warmed-up evaluator)
+
 # rename as your team/bot's name
 PARTICIPANT = "TotallyAwesomeDatathonParticipant"
 AGENT_NAME = "JustAsAwesomeAgent"
@@ -55,7 +57,7 @@ def new_half(config: AgentConfig, memory: dict) -> None:
     In the tournament, each half runs in a brand-new copy of your server,
     so nothing you learn in one half carries over to the other half.
     """
-    memory["hands_played"] = 0
+    bot.on_new_half(config, memory)
 
 
 def choose_action(obs: Observation, memory: dict) -> Action:
@@ -86,11 +88,9 @@ def choose_action(obs: Observation, memory: dict) -> Action:
     scores your hand (higher is better).
     """
 
-    # Simple example of a heuristic bot, which just checks when it is of no cost, otherwise folds
-    # Replace this with your strategy!
-    if obs.to_call == 0:
-        return Action.CHECK_CALL
-    return Action.FOLD
+    # Strategy lives in bot/ (equity rollouts + EV policy + opponent model).
+    # bot.decide never raises and always returns a legal action.
+    return bot.decide(obs, memory)
 
 
 def on_hand_end(result: HandResult, memory: dict) -> None:
@@ -104,7 +104,7 @@ def on_hand_end(result: HandResult, memory: dict) -> None:
     went_to_showdown, board (cards revealed), opp_hole (opponent's cards,
     only after a showdown, else None), winner ('me', 'opp' or 'split').
     """
-    memory["hands_played"] += 1
+    bot.observe_result(result, memory)
 
 # ===== END OF YOUR CODE =====
 

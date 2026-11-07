@@ -1,0 +1,14 @@
+# Keep the bot image small: only what agent.py needs at runtime ships.
+# Never exclude bot/ (agent.py imports it, and bot/data holds the preflop table).
+.git
+.gitignore
+research_notes/
+reports/
+dev/
+tests/
+**/__pycache__/
+*.pyc
+*.log
+*.json
+.venv/
+venv/
