@@ -33,6 +33,7 @@ from game import (BIG_BLIND, CHOP_Z, ERROR_LIMIT, NUM_DEALS, TIME_BANK_SECONDS, 
 GROUPS = {
     "baselines": sorted(glob.glob(os.path.join(ROOT, "baseline-bots", "*.py"))),
     "zoo": sorted(p for p in glob.glob(os.path.join(ROOT, "dev", "zoo", "*.py")) if not os.path.basename(p).startswith("_")),
+    "sparring": sorted(p for p in glob.glob(os.path.join(ROOT, "dev", "sparring", "*.py")) if not os.path.basename(p).startswith("_")),
 }
 
 
