@@ -10,7 +10,7 @@ Every job plays a full duplicate match (both halves, seats swapped, fresh
 memory per half) through dev/harness.py's play_half, so time banks, errors
 and scoring follow the judge's rules.
 
-Results are written to demon_data/demon_q.npz, which demon.py loads at import.
+Results are written to demon/data/demon_q.npz, which demon/demon.py loads at import.
 """
 
 import argparse
@@ -31,8 +31,9 @@ sys.path.insert(0, os.path.join(ROOT, "dev"))
 from game import BIG_BLIND, CHOP_Z, TIME_BANK_SECONDS, AgentConfig  # noqa: E402
 from harness import GROUPS, _load, _parse, play_half  # noqa: E402
 
-DATA = os.path.join(ROOT, "demon_data", "demon_q.npz")
-DEMON = os.path.join(ROOT, "demon.py")
+DATA = os.path.join(ROOT, "demon", "data", "demon_q.npz")
+DEMON = os.path.join(ROOT, "demon", "demon.py")
+sys.path.insert(0, os.path.dirname(DEMON))  # so `import demon` finds demon/demon.py
 GROUPS = dict(GROUPS, agent=[os.path.join(ROOT, "agent.py")])
 
 # params the tuner may move, with (low, high) bounds

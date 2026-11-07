@@ -26,7 +26,7 @@ from game import AgentConfig  # noqa: E402
 
 
 def load_demon():
-    spec = importlib.util.spec_from_file_location("demon_under_test", os.path.join(BUNDLE, "demon.py"))
+    spec = importlib.util.spec_from_file_location("demon_under_test", os.path.join(BUNDLE, "demon", "demon.py"))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -45,7 +45,7 @@ def bot():
 
 
 def test_demon_reads_port_from_environment():
-    source = open(os.path.join(BUNDLE, "demon.py"), encoding="utf-8").read()
+    source = open(os.path.join(BUNDLE, "demon", "demon.py"), encoding="utf-8").read()
     assert 'os.environ.get("PORT"' in source and "0.0.0.0" in source
 
 

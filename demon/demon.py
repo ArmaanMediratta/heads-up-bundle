@@ -5,7 +5,7 @@ Same contract as agent.py: one file, a FastAPI server, and the three hooks
 new_half / choose_action / on_hand_end (so dev/harness.py can also load it
 in-process).
 
-    python demon.py                  # listens on port 5008 (PORT=... to change)
+    python demon/demon.py            # listens on port 5008 (PORT=... to change)
 
 Architecture
 ------------
@@ -30,7 +30,7 @@ Architecture
    Six tabular Q-learners each see the state through their own lens (core
    equity, betting line, board texture, stack depth, opponent profile, and a
    bias term). They are fit jointly on Monte Carlo returns offline
-   (`dev/demon_lab.py train`, saved to demon_data/demon_q.npz) and can keep
+   (`dev/demon_lab.py train`, saved to demon/data/demon_q.npz) and can keep
    learning online during a half (DEMON_ONLINE=1).
 
 4. Meta Q-learner
@@ -55,7 +55,11 @@ the same in the tournament (fresh process per half) and locally.
 """
 
 import os
+import sys
 import traceback
+
+# This file lives in demon/, so look one folder up for game.py, evaluator.py and bot/.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import uvicorn
@@ -74,12 +78,12 @@ PARTICIPANT = "TotallyAwesomeDatathonParticipant"
 AGENT_NAME = "Demon"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.environ.get("DEMON_DATA", os.path.join(HERE, "demon_data", "demon_q.npz"))
+DATA_PATH = os.environ.get("DEMON_DATA", os.path.join(HERE, "data", "demon_q.npz"))
 TRAIN = os.environ.get("DEMON_TRAIN", "") not in ("", "0")
 TRAIN_EPS = float(os.environ.get("DEMON_EPS", "0.06"))
 FORCE_EXPERT = os.environ.get("DEMON_EXPERT", "")  # pin one expert (for tuning)
 # Online Q updates during a half. Off by default: without trained offline tables
-# they only add noise (measured), so turn on once demon_data has a trained prior.
+# they only add noise (measured), so turn on once demon/data has a trained prior.
 ONLINE = os.environ.get("DEMON_ONLINE", "0") not in ("", "0")
 
 ACTIONS = (Action.FOLD, Action.CHECK_CALL, Action.RAISE_HALF, Action.RAISE_POT)
@@ -88,7 +92,7 @@ NA = len(ACTIONS)
 
 # ---------------------------------------------------------------------------
 # Strategy experts (parameter sets of one EV model). Tuned by `dev/demon_lab.py tune`;
-# tuned values are stored in demon_data/demon_q.npz and override these defaults.
+# tuned values are stored in demon/data/demon_q.npz and override these defaults.
 # ---------------------------------------------------------------------------
 
 BASE = {
