@@ -20,6 +20,7 @@ def on_new_half(config: AgentConfig, memory: dict) -> None:
     memory["np_rng"] = np.random.default_rng(int(seed) if seed else None)
     memory["params"] = dict(policy.PARAMS)  # per-half copy, so dev/harness.py can A/B tweaks
     memory["last_eq"] = 0.5
+    memory["raise_cap"] = config.raise_cap
     memory["errors"] = []
     timebank.init(memory, config.time_bank_seconds, config.num_hands)
     opponent.init(memory)
@@ -38,7 +39,7 @@ def decide(obs: Observation, memory: dict):
         action = safety.fallback(obs)
     action = safety.legalize(action, obs)
     try:
-        opponent.note_our_action(action, memory)
+        opponent.note_our_action(action, obs, memory)
         timebank.charge(memory, timebank.now() - start)
     except Exception:
         safety.log_exception(memory, "decide/bookkeeping")

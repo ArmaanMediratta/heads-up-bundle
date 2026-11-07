@@ -15,7 +15,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 import bot  # noqa: E402
-from bot import fasteval, policy, safety  # noqa: E402
+from bot import fasteval, opponent, policy, safety  # noqa: E402
 from evaluator import omaha_score  # noqa: E402
 from game import RAISE_ACTIONS, Action, AgentConfig, Game, make_deal  # noqa: E402
 
@@ -90,3 +90,59 @@ def test_new_half_memory_keys_are_fixed():
     play(20, 0.5, seed="keys")
     bot.on_new_half(AgentConfig(), b)
     assert a.keys() == b.keys()
+
+
+def _play_vs(opp_policy, num_hands=200, seed="opp"):
+    """Our bot (always seat 0) vs a scripted opponent; returns memory."""
+    memory = {}
+    bot.on_new_half(AgentConfig(num_hands=num_hands), memory)
+    for d in range(num_hands):
+        game = Game(make_deal(seed, d), d % 2, d)
+        while not game.is_terminal:
+            obs = game.observation(game.to_act)
+            game.apply(bot.decide(obs, memory) if game.to_act == 0 else opp_policy(obs))
+        bot.observe_result(game.hand_result(0), memory)
+    return memory
+
+
+def _folder(obs):
+    """Folds to any bet, never raises."""
+    return Action.FOLD if obs.to_call > 0 else Action.CHECK_CALL
+
+
+def _jammer(obs):
+    """Raises whenever it can, never folds."""
+    for a in (Action.RAISE_POT, Action.RAISE_HALF):
+        if a in obs.legal_actions:
+            return a
+    return Action.CHECK_CALL
+
+
+def test_hand_ending_folds_are_counted():
+    # The folder's folds always end the hand before our next turn; they must
+    # still count as (non-raise) actions, or it would look like a raiser.
+    memory = _play_vs(_folder)
+    o = memory["opp"]
+    assert opponent.pf_raise_freq(memory) < 0.1
+    assert opponent.fold_to_raise(memory) > 0.8
+    assert o["pf_acts"] > 150
+
+
+def test_always_raiser_reads_as_raiser_that_never_folds_once_raised():
+    memory = _play_vs(_jammer)
+    assert opponent.pf_raise_freq(memory) > 0.9
+    assert opponent.fold_to_raise(memory, ctx=1) < 0.15
+    assert opponent.reraise_rate(memory, ctx=1) > 0.7
+
+
+def test_fixcount_switch_restores_old_counting():
+    memory = {}
+    bot.on_new_half(AgentConfig(), memory)
+    memory["params"]["fixcount"] = 0
+    for d in range(100):
+        game = Game(make_deal("old", d), d % 2, d)
+        while not game.is_terminal:
+            obs = game.observation(game.to_act)
+            game.apply(bot.decide(obs, memory) if game.to_act == 0 else _folder(obs))
+        bot.observe_result(game.hand_result(0), memory)
+    assert memory["opp"]["pf_acts"] < 20  # the old bug: the folds are invisible

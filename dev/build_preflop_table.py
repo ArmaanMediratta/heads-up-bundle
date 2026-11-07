@@ -56,7 +56,7 @@ def main() -> None:
     rng = np.random.default_rng(args.seed)
     class_eq = np.zeros(n_classes)
     for c in range(n_classes):
-        win, _, _ = _batch(hands[reps[c]].tolist(), [], args.samples, rng, None)
+        win, _, _, _ = _batch(hands[reps[c]].tolist(), [], args.samples, rng, None)
         class_eq[c] = win.mean()
         if c % 2000 == 0:
             print(f"  class {c}/{n_classes} ({time.perf_counter() - start:.0f}s)")
