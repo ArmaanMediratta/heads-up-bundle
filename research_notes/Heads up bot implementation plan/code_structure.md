@@ -1,6 +1,6 @@
 # Code Structure and Architecture of heads-up-bundle
 
-All sources are files in the repository at `/Users/armaanmediratta/Desktop/datathon/heads-up-bundle` (git HEAD `c83ab6e "good luck"`, a single commit, 17 tracked files). Links are repo-relative paths with line numbers. Everything below was read directly from source.
+All sources are files in the repository at the repo root (`heads-up-bundle/`) (git HEAD `c83ab6e "good luck"`, a single commit, 17 tracked files). Links are repo-relative paths with line numbers. Everything below was read directly from source.
 
 ## 1. Directory tree, languages, frameworks, dependencies
 

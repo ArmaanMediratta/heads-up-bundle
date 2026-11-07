@@ -1,6 +1,6 @@
 # Participant Guide Extraction: TAMU Datathon Poker Bot Challenge (Heads-Up Short Deck 5-Card PLO)
 
-Source for every citation below: the 15-page PDF "Heads Up Participant Guide - Google Docs.pdf" (local file `/Users/armaanmediratta/Downloads/Heads Up Participant Guide - Google Docs.pdf`, cited as [Guide p.N]). The text was extracted in full with pypdf; every page (1-15) was read. Text in quotation marks is copied exactly from the guide (whitespace normalised). Text without quotes is a close paraphrase. Anything under "Inferences" is my own interpretation, not the guide's.
+Source for every citation below: the 15-page PDF "Heads Up Participant Guide - Google Docs.pdf" (distributed by the organizers; not stored in this repo, cited as [Guide p.N]). The text was extracted in full with pypdf; every page (1-15) was read. Text in quotation marks is copied exactly from the guide (whitespace normalised). Text without quotes is a close paraphrase. Anything under "Inferences" is my own interpretation, not the guide's.
 
 Guide table of contents [Guide p.2]: 1 Challenge at a glance; 2 Getting started; 3 The game; 4 Writing your bot; 5 Time limits, errors and forfeits; 6 Scoring; 7 Where your bot runs; 8 Testing locally; 9 Submitting; 10 Strategy ideas; 11 FAQ; 12 Quick reference.
 
