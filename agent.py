@@ -41,8 +41,8 @@ warmup()
 import bot  # noqa: E402  (builds its numpy tables from the warmed-up evaluator)
 
 # rename as your team/bot's name
-PARTICIPANT = "TotallyAwesomeDatathonParticipant"
-AGENT_NAME = "JustAsAwesomeAgent"
+PARTICIPANT = "team_montecarlo"
+AGENT_NAME = "MonteCarloAgent"
 
 
 # ===== YOUR CODE HERE =====
