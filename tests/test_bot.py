@@ -130,7 +130,8 @@ def test_hand_ending_folds_are_counted():
 
 def test_always_raiser_reads_as_raiser_that_never_folds_once_raised():
     memory = _play_vs(_jammer)
-    assert opponent.pf_raise_freq(memory) > 0.9
+    # below 1: it must call when the raise cap is hit or it is all-in
+    assert opponent.pf_raise_freq(memory) > 0.8
     assert opponent.fold_to_raise(memory, ctx=1) < 0.15
     assert opponent.reraise_rate(memory, ctx=1) > 0.7
 

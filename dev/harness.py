@@ -34,6 +34,11 @@ GROUPS = {
     "baselines": sorted(glob.glob(os.path.join(ROOT, "baseline-bots", "*.py"))),
     "zoo": sorted(p for p in glob.glob(os.path.join(ROOT, "dev", "zoo", "*.py")) if not os.path.basename(p).startswith("_")),
     "sparring": sorted(p for p in glob.glob(os.path.join(ROOT, "dev", "sparring", "*.py")) if not os.path.basename(p).startswith("_")),
+    # "template cousins": equity-vs-random + pot-odds bots like many teams will build
+    "cousins": sorted(p for p in glob.glob(os.path.join(ROOT, "dev", "cousins", "*.py")) if not os.path.basename(p).startswith("_")),
+    # equity-family bots of any origin: the cousins plus our equity-based practice bots
+    "equity": sorted(p for p in glob.glob(os.path.join(ROOT, "dev", "cousins", "*.py")) if not os.path.basename(p).startswith("_"))
+              + [os.path.join(ROOT, "dev", "sparring", "mc_grinder.py"), os.path.join(ROOT, "dev", "zoo", "equity_caller.py")],
 }
 
 

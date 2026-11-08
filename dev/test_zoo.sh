@@ -16,8 +16,11 @@
 #   -b BOT      bot under test, optionally with param overrides,
 #               e.g. "agent.py@r_oop=0.9" (default agent.py)
 #   -g GROUPS   comma-separated opponent groups: zoo, sparring, baselines,
-#               mains (agent.py + demon/demon.py, minus the bot under test),
-#               or all (every group above)
+#               cousins (dev/cousins: "template" equity-vs-random + pot-odds bots),
+#               equity (cousins + mc_grinder + equity_caller: the equity family),
+#               mains (agent.py, demon/demon.py, challenger/challenger.py when
+#               present, minus the bot under test),
+#               or all (zoo, sparring, baselines, cousins, mains)
 #               (default zoo,sparring)
 #   -B          also play the four baseline-bots/ (same as adding baselines to -g)
 #   -t SECONDS  time bank per half (default 8; lower it to mimic a slower CPU)
@@ -36,6 +39,7 @@
 #   dev/test_zoo.sh                    # 3 matches vs each zoo + sparring bot
 #   dev/test_zoo.sh -n 10 -B           # 10 matches vs zoo + sparring + baselines
 #   dev/test_zoo.sh -g sparring        # sparring bots only
+#   dev/test_zoo.sh -g equity,mains    # equity family + demon/challenger
 #   dev/test_zoo.sh -g all -n 10       # everything, incl. agent.py vs demon
 #   dev/test_zoo.sh -n 10 -O           # report, then open it
 #   dev/test_zoo.sh -R                 # quick table, no report
@@ -99,7 +103,7 @@ shopt -s nullglob
 EXPANDED=()
 for group in "${OPP_GROUPS[@]}"; do
   if [[ "$group" == all ]]; then
-    EXPANDED+=(zoo sparring baselines mains)
+    EXPANDED+=(zoo sparring baselines cousins mains)
   else
     EXPANDED+=("$group")
   fi
@@ -120,12 +124,14 @@ for group in "${GROUP_LIST[@]}"; do
     zoo)       bots=(dev/zoo/[!_]*.py) ;;
     sparring)  bots=(dev/sparring/[!_]*.py) ;;
     baselines) bots=(baseline-bots/*.py) ;;
+    cousins)   bots=(dev/cousins/[!_]*.py) ;;
+    equity)    bots=(dev/cousins/[!_]*.py dev/sparring/mc_grinder.py dev/zoo/equity_caller.py) ;;
     mains)
       bots=()
-      for main in agent.py demon/demon.py; do
+      for main in agent.py demon/demon.py challenger/challenger.py; do
         [[ -f "$main" && ! "$main" -ef "$BOT_PATH" ]] && bots+=("$main")
       done ;;
-    *) echo "error: unknown group '$group' (use zoo, sparring, baselines, mains, all)" >&2; exit 2 ;;
+    *) echo "error: unknown group '$group' (use zoo, sparring, baselines, cousins, equity, mains, all)" >&2; exit 2 ;;
   esac
   if [[ ${#bots[@]} -eq 0 ]]; then
     echo "warning: no bots found for group '$group'" >&2

@@ -10,7 +10,7 @@ import os
 
 import numpy as np
 
-from bot import opponent, policy, safety, timebank
+from bot import mirror, opponent, policy, safety, timebank
 from game import AgentConfig, HandResult, Observation
 
 
@@ -24,6 +24,7 @@ def on_new_half(config: AgentConfig, memory: dict) -> None:
     memory["errors"] = []
     timebank.init(memory, config.time_bank_seconds, config.num_hands)
     opponent.init(memory)
+    mirror.init(memory)
     timebank.charge(memory, timebank.now() - start)
 
 
@@ -40,6 +41,8 @@ def decide(obs: Observation, memory: dict):
     action = safety.legalize(action, obs)
     try:
         opponent.note_our_action(action, obs, memory)
+        if mirror.enabled(memory):
+            mirror.note_decision(obs, action, memory)
         timebank.charge(memory, timebank.now() - start)
     except Exception:
         safety.log_exception(memory, "decide/bookkeeping")
@@ -51,6 +54,19 @@ def observe_result(result: HandResult, memory: dict) -> None:
     try:
         if "opp" in memory:
             opponent.hand_end(result, memory)
-            timebank.charge(memory, timebank.now() - start)
     except Exception:
         safety.log_exception(memory, "observe_result")
+    try:
+        if mirror.enabled(memory):
+            mirror.hand_end(result, memory)
+    except Exception:
+        safety.log_exception(memory, "observe_result/mirror")
+        try:
+            memory["mirror"]["state"] = "stopped"  # a broken detector stays off
+        except Exception:
+            pass
+    try:
+        if "tb_spent" in memory:
+            timebank.charge(memory, timebank.now() - start)
+    except Exception:
+        safety.log_exception(memory, "observe_result/timebank")

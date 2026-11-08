@@ -43,12 +43,17 @@ PARAMS = {
     "fixcount": 1,         # count the opponent's hand-ending folds and calls
     "split_ctx": 1,        # fold/re-raise rates split by "opponent already raised"
     "lookahead": 1,        # model the opponent re-raising our raise
-    "commit_call": 1,      # price low-SPR calls as all-in
+    "lookahead_qmax": 0.5,  # ...only vs selective re-raisers: above this re-raise rate
+                            # their re-raises carry little strength (maniacs, always-raisers)
+    "commit_call": 0,      # price low-SPR calls as all-in (neutral in A/B tests: off)
     "sd_use": 1.0,         # weight of showdown-observed preflop ranges
-    "defend": 0.15,        # preflop call bonus (x pot) per unit of opp raise rate above 35%
-    "draw_weight": 0.0,    # weight of draw-aware opponent strength postflop (0 = made hand only)
+    "defend": 0.0,         # preflop call bonus (x pot) per unit of opp raise rate above 35%
+                           # (helped only while folds went uncounted; neutral since: off)
+    "draw_weight": 0.0,    # weight of draw-aware opponent strength postflop (0 = made hand only;
+                           # neutral in A/B tests and ~2x the thinking time, so off)
     "draw_runouts": 4,
     "mix_eps": 0.0,        # pick randomly among actions within this x pot of the best
+    "mirror": 0,           # detect a copy of ourselves and switch to bot/mirror.py MIRROR_COUNTER (off until validated)
 }
 
 
@@ -131,9 +136,10 @@ def decide(obs: Observation, memory: dict, budget: float) -> Action:
         f = float(1.0 - w_cont.sum() / w.sum())
         eq_cont = _mean(w_cont, win, eq)
         q = opponent.reraise_rate(memory, ctx) if p["lookahead"] else 0.0
+        if q > p["lookahead_qmax"]:
+            q = 0.0
         # re-raisers are the top q of the continuing hands
         w_rr = w_cont * _sigmoid((opp_now - (1.0 - q * (1.0 - t))) / p["temp_post"])
-        w_flat = w_cont - w_rr
         can_reraise = obs.raises_this_street + 1 < memory.get("raise_cap", 4)
         seen_totals = set()
         for a in sorted(raises, reverse=True):  # RAISE_POT first, so it wins ties
@@ -149,9 +155,10 @@ def decide(obs: Observation, memory: dict, budget: float) -> Action:
             fa = f if a == Action.RAISE_POT else f * p["half_fold_scale"]
             q_eff = q if (can_reraise and added < stack and opp_add < opp_stack) else 0.0
             if q_eff > 0 and w_cont.sum() > 1e-6:
-                q_eff = float(w_rr.sum() / w_cont.sum())
-                eq_flat = _mean(w_flat, win, eq_cont)
+                # q_eff is the measured re-raise rate itself: the soft cut-off only picks
+                # WHICH hands re-raise (their equity), never how often (it inflated q).
                 eq_rr = _mean(w_rr, win, eq_cont)
+                eq_flat = min(1.0, max(0.0, (eq_cont - q_eff * eq_rr) / (1.0 - q_eff)))
                 # facing the re-raise we fold or get it all in (pot-limit at 40bb
                 # commits within one more raise)
                 rr_ev = max(-added, eq_rr * (pot + stack + opp_stack) - stack)
